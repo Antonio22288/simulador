@@ -1,0 +1,249 @@
+<title>Simulador Código da Estrada</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: single-column exam paper, sign-blue header band, answer rows like a printed test sheet */
+:root{
+  --bg:#edf1f5; --surface:#ffffff; --fg:#0c2036; --muted:#5a6b7d; --line:#cfd8e1;
+  --blue:#0b4ea2; --blue-fg:#ffffff; --red:#c4122f; --green:#17784a; --amber:#b86e00;
+  --fig-bg:#f4f7fa; --ok-bg:#e3f4ea; --bad-bg:#fbe5e8; --sel-bg:#e2ecf8;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1623; --surface:#13243a; --fg:#e8eef5; --muted:#93a5b8; --line:#26405c;
+  --blue:#5a9bf0; --blue-fg:#07182b; --red:#ff6b7f; --green:#4cc58a; --amber:#f0a73a;
+  --fig-bg:#dfe7f0; --ok-bg:#12382a; --bad-bg:#44171f; --sel-bg:#1c3a60; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1623; --surface:#13243a; --fg:#e8eef5; --muted:#93a5b8; --line:#26405c;
+  --blue:#5a9bf0; --blue-fg:#07182b; --red:#ff6b7f; --green:#4cc58a; --amber:#f0a73a;
+  --fig-bg:#dfe7f0; --ok-bg:#12382a; --bad-bg:#44171f; --sel-bg:#1c3a60; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance;line-height:1.1}
+h1{font-size:clamp(2rem,7vw,2.8rem)}
+h2{font-size:1.5rem}
+.top{display:flex;align-items:center;gap:12px}
+.roundel{flex:none}
+.eyebrow{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:.95rem;color:var(--muted);font-weight:600}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.sheet{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:4px}
+.sheet div{padding:12px;text-align:center;border-right:1px solid var(--line)}
+.sheet div:last-child{border-right:0}
+.sheet b{display:block;font-family:var(--display);font-size:1.9rem;line-height:1}
+.sheet span{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{border:2px solid var(--line);background:transparent;color:var(--fg);border-radius:4px;padding:12px;text-align:left;font:inherit;cursor:pointer}
+.mode b{display:block;font-family:var(--display);font-size:1.2rem}
+.mode small{color:var(--muted);line-height:1.3;display:block}
+.mode[aria-pressed="true"]{border-color:var(--blue);background:var(--sel-bg)}
+button{font:inherit}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.btn{background:var(--blue);color:var(--blue-fg);border:0;border-radius:4px;padding:12px 20px;font-family:var(--display);font-size:1.2rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border:2px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.timer{font-family:var(--display);font-size:1.7rem;font-variant-numeric:tabular-nums;font-weight:700}
+.timer.low{color:var(--red)}
+.cover{background:var(--blue);color:var(--blue-fg);border-radius:6px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;gap:4px}
+.cover .em{font-size:2rem;letter-spacing:.2em}
+.cover .for{font-family:var(--display);text-transform:uppercase;letter-spacing:.2em;font-size:1rem;opacity:.85}
+.cover .nm{font-family:var(--display);font-size:clamp(2rem,9vw,3rem);font-weight:700;line-height:1.05}
+.cover .se{font-style:italic;font-size:1.05rem;opacity:.9;margin-top:6px}
+.cover .ml{font-size:1.3rem;font-weight:600}
+.fig{margin:0;display:flex;justify-content:center;background:var(--fig-bg);border-radius:4px;padding:12px}.fig svg{width:150px;height:150px;max-width:100%}
+.q{font-size:1.15rem;font-weight:600;line-height:1.35}
+.opts{display:flex;flex-direction:column;gap:10px;padding:0;margin:0;list-style:none}
+.opt{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;background:transparent;color:var(--fg);border:2px solid var(--line);border-radius:4px;padding:12px;cursor:pointer}
+.opt .k{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--muted);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:.95rem;color:var(--muted)}
+.opt[aria-pressed="true"]{border-color:var(--blue);background:var(--sel-bg)}
+.opt[aria-pressed="true"] .k{background:var(--blue);border-color:var(--blue);color:var(--blue-fg)}
+.opt.ok{border-color:var(--green);background:var(--ok-bg)}
+.opt.bad{border-color:var(--red);background:var(--bad-bg)}
+.opt.ok .k{background:var(--green);border-color:var(--green);color:var(--surface)}
+.opt.bad .k{background:var(--red);border-color:var(--red);color:var(--surface)}
+.note{background:var(--sel-bg);border-left:4px solid var(--blue);padding:10px 12px;border-radius:2px;font-size:.95rem}
+.nav{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.dot{aspect-ratio:1;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:3px;font-size:.8rem;cursor:pointer;font-variant-numeric:tabular-nums;padding:0}
+.dot.done{background:var(--sel-bg);color:var(--fg);border-color:var(--blue)}
+.dot.cur{outline:2px solid var(--fg);outline-offset:1px}
+.dot.ok{background:var(--ok-bg);border-color:var(--green)}
+.dot.bad{background:var(--bad-bg);border-color:var(--red)}
+.actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.verdict{font-family:var(--display);font-size:clamp(2.4rem,10vw,3.6rem);font-weight:700;line-height:1;text-transform:uppercase}
+.verdict.pass{color:var(--green)} .verdict.fail{color:var(--red)}
+.err{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:6px}
+.err p{margin:0}
+.tag{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-size:.85rem;font-weight:700}
+.tag.r{color:var(--red)} .tag.g{color:var(--green)}
+.fine{color:var(--muted);font-size:.85rem;margin:0}
+@media (max-width:420px){.modes{grid-template-columns:1fr}.nav{grid-template-columns:repeat(6,1fr)}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <svg class="roundel" width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="var(--blue)"/><path d="M12 28 L22 10 L32 28 Z" fill="var(--blue-fg)"/><rect x="13" y="30" width="18" height="3" rx="1" fill="var(--blue-fg)"/></svg>
+    <div><div class="eyebrow">Categoria B · Ligeiros</div><h1>Simulador de código</h1></div>
+  </div>
+  <div id="app"></div>
+  <p class="fine">Prática baseada no Código da Estrada. Não substitui o exame oficial do IMT nem o material da sua escola de condução.</p>
+</div>
+
+<script>
+const BANK=[
+["Qual é o limite de velocidade para um automóvel ligeiro dentro das localidades, se não houver sinal que indique outro?","50 km/h",["30 km/h","60 km/h","70 km/h"],"Dentro das localidades o limite geral é 50 km/h."],
+["Fora das localidades, numa estrada sem sinalização especial, qual é o limite para um automóvel ligeiro de passageiros?","90 km/h",["80 km/h","100 km/h","120 km/h"],"Fora das localidades, em estradas normais, o limite é 90 km/h."],
+["Qual é o limite geral de velocidade para ligeiros de passageiros nas autoestradas?","120 km/h",["100 km/h","110 km/h","130 km/h"],"Nas autoestradas o limite geral para ligeiros é 120 km/h."],
+["Qual é a taxa de álcool no sangue a partir da qual um condutor comete contraordenação?","0,5 g/l",["0,2 g/l","0,8 g/l","1,2 g/l"],"A taxa máxima geral é 0,5 g/l. A partir de 1,2 g/l passa a ser crime."],
+["Qual é a taxa máxima de álcool no sangue para condutores com menos de 3 anos de carta?","0,2 g/l",["0,0 g/l","0,5 g/l","0,8 g/l"],"Condutores em regime probatório, profissionais e de veículos de emergência têm o limite de 0,2 g/l."],
+["O uso do cinto de segurança é obrigatório:","Para todos os ocupantes de lugares equipados com cinto",["Só para o condutor","Só nas autoestradas","Só fora das localidades"],"O cinto é obrigatório para condutor e passageiros, em qualquer via, sempre que o lugar o tenha."],
+["Até que idade ou altura as crianças devem viajar em cadeirinha ou sistema de retenção adequado?","Até aos 12 anos ou 135 cm",["Até aos 6 anos","Até aos 8 anos ou 120 cm","Até aos 14 anos"],"Crianças com menos de 12 anos e menos de 135 cm devem usar sistema de retenção adequado."],
+["Conduz o veículo A (azul). Neste cruzamento sem sinalização, quem tem prioridade?","O veículo B (vermelho), que se apresenta pela sua direita",["O veículo A, por seguir em frente","O veículo mais rápido","O veículo de maior dimensão"],"Na falta de sinalização aplica-se a regra da prioridade de quem vem da direita.","cruz"],
+["Numa rotunda, quem tem prioridade?","Os veículos que já circulam na rotunda",["Os veículos que pretendem entrar","Os veículos de maior cilindrada","Os que vêm da direita da via de entrada"],"Quem entra na rotunda deve ceder passagem a quem já nela circula."],
+["Aproxima-se de uma passagem para peões e um peão começa a atravessar. O que deve fazer?","Parar e deixá-lo atravessar",["Buzinar para avisar","Acelerar para passar antes","Passar devagar, sem parar"],"O condutor deve parar perante peão que já está a atravessar ou prestes a fazê-lo."],
+["Em qual destas situações é proibido ultrapassar?","Na aproximação de uma passagem para peões sinalizada",["Numa reta com boa visibilidade","Numa via com duas faixas no mesmo sentido","Atrás de um veículo muito lento, com via livre"],"É proibido ultrapassar na aproximação de passagens de peões, curvas e lombas sem visibilidade."],
+["Uma linha contínua no eixo da via significa que:","Não a podem transpor nem circular sobre ela",["Pode transpô-la para ultrapassar","Só os motociclos a podem transpor","Indica apenas fim de estrada"],"A linha contínua não pode ser transposta nem pisada.","linha"],
+["Um sinal triangular com bordo vermelho é um sinal de:","Perigo",["Proibição","Obrigação","Informação"],"Os sinais de perigo são triangulares com bordo vermelho.","perigo"],
+["Um sinal circular de fundo azul indica:","Obrigação",["Proibição","Perigo","Fim de proibição"],"Os sinais de obrigação são circulares de fundo azul.","obrig"],
+["Um sinal circular com bordo vermelho indica:","Proibição ou restrição",["Obrigação","Perigo","Pré-sinalização de saída"],"Os sinais de proibição são circulares com bordo vermelho.","ultrap"],
+["Perante o sinal STOP, o condutor deve:","Parar sempre e ceder a passagem",["Abrandar e passar se não vier ninguém","Parar só se vier outro veículo","Buzinar e avançar"],"O STOP obriga a paragem, mesmo que não venha nenhum veículo.","stop"],
+["É permitido usar o telemóvel com a mão enquanto se conduz?","Não, só com sistema mãos livres",["Sim, em vias sem trânsito","Sim, se o carro estiver devagar","Sim, nas localidades"],"É proibido conduzir com telemóvel na mão. Só é permitido com dispositivo mãos livres."],
+["Com quantos pontos inicia um condutor a carta de condução por pontos?","12 pontos",["10 pontos","15 pontos","20 pontos"],"Cada condutor tem 12 pontos e perde a carta se chegar a zero."],
+["Qual é a profundidade mínima legal do piso dos pneus?","1,6 mm",["0,8 mm","2,5 mm","3 mm"],"Abaixo de 1,6 mm de profundidade o pneu não é legal."],
+["Aproxima-se uma ambulância com sinais sonoros e luminosos ligados. O que deve fazer?","Facilitar a passagem, encostando à direita e parando se necessário",["Acelerar para a deixar para trás","Manter a marcha e a faixa","Parar no meio da faixa"],"Os veículos de emergência em serviço urgente têm prioridade. Deve-se facilitar a sua passagem."],
+["Em caso de aquaplanagem, o condutor deve:","Aliviar o acelerador e evitar travagens bruscas",["Travar a fundo","Acelerar para recuperar aderência","Virar bruscamente o volante"],"Travar ou virar bruscamente agrava a perda de controlo. Reduza a velocidade gradualmente."],
+["Ao ultrapassar um ciclista, qual é a distância lateral mínima a respeitar?","1,5 metros",["0,5 metros","1 metro","2,5 metros"],"A ultrapassagem a velocípedes exige pelo menos 1,5 m de distância lateral."],
+["Dentro das localidades, o uso da buzina é permitido:","Apenas para evitar um acidente",["Para cumprimentar outros condutores","Sempre que o trânsito esteja parado","Para pedir prioridade"],"Nas localidades a buzina só se usa para evitar acidente."],
+["Um automóvel ligeiro de passageiros novo deve fazer a primeira inspeção periódica:","Ao fim de 4 anos",["Ao fim de 1 ano","Ao fim de 2 anos","Ao fim de 6 anos"],"A primeira inspeção de um ligeiro particular é aos 4 anos de matrícula."],
+["O seguro de responsabilidade civil automóvel é:","Obrigatório para circular",["Facultativo","Obrigatório só para veículos novos","Obrigatório só para condutores novos"],"Nenhum veículo pode circular sem seguro obrigatório de responsabilidade civil."],
+["Em viagens longas, recomenda-se parar para descansar:","De duas em duas horas",["De seis em seis horas","Só quando se sentir sono","Apenas à noite"],"A fadiga reduz a atenção e os reflexos. Faça pausas regulares, cerca de 2 em 2 horas."],
+["A distância de segurança em relação ao veículo da frente deve permitir:","Parar em segurança sem colidir",["Ver a matrícula do veículo da frente","Manter sempre 10 metros","Ultrapassar a qualquer momento"],"A distância depende da velocidade e das condições da via e do piso."],
+["Com chuva intensa, o que acontece à distância de travagem?","Aumenta, por isso deve-se aumentar a distância de segurança",["Mantém-se igual","Diminui","Só aumenta acima dos 100 km/h"],"Com piso molhado a aderência diminui e a distância de travagem aumenta."],
+["Num túnel, as luzes devem estar:","Ligadas (médios)",["Desligadas","Apenas os máximos","Apenas as luzes de presença"],"Dentro dos túneis devem usar-se os médios."],
+["Antes de mudar de direção ou de faixa, o condutor deve:","Sinalizar a intenção com antecedência e verificar os espelhos",["Sinalizar só depois de iniciar a manobra","Apenas buzinar","Não precisa de sinalizar se a via estiver livre"],"A sinalização deve ser feita com antecedência suficiente, depois de verificar o trânsito."],
+["Numa via com dois sentidos de trânsito, o condutor deve circular:","Pela direita, o mais próximo possível do limite da faixa",["Pelo eixo da via","Pela esquerda","Por onde houver mais espaço"],"Em Portugal a circulação faz-se pela direita."],
+["Um sinal triangular com o vértice virado para baixo significa:","Ceda a passagem",["Paragem obrigatória","Perigo de queda de pedras","Fim de via prioritária"],"O triângulo invertido, de bordo vermelho, obriga a ceder a passagem.","ceda"],
+["Perante uma luz amarela fixa num semáforo, o condutor deve:","Parar, a não ser que já não o possa fazer em segurança",["Acelerar sempre","Continuar a marcha sem alterar","Parar apenas se vir peões"],"O amarelo fixo obriga a parar, exceto se já estiver tão perto que não consiga fazê-lo em segurança.","semaf"],
+["Uma luz amarela intermitente num semáforo indica:","Atenção. Deve avançar com precaução e respeitar as prioridades",["Paragem obrigatória","Proibição de passar","Via livre sem restrições"],"O amarelo intermitente pede cuidado e respeito pela sinalização de prioridade.","semaf"],
+["Quando se devem ligar os quatro piscas (luzes de emergência)?","Quando o veículo está imobilizado numa situação de perigo, como uma avaria",["Para estacionar em segunda fila","Ao ultrapassar","Sempre que chove"],"Os quatro piscas assinalam perigo, avaria ou imobilização forçada."],
+["É permitido estacionar sobre uma passagem para peões?","Não",["Sim, por pouco tempo","Sim, à noite","Sim, se não houver peões"],"É proibido parar ou estacionar sobre passagens para peões."],
+["Em que lado se faz a ultrapassagem, regra geral?","Pela esquerda",["Pela direita","Pelo lado onde houver mais espaço","Indiferentemente"],"A ultrapassagem faz-se, em regra, pela esquerda."],
+["Em caso de sono ao volante, a melhor decisão é:","Parar num local seguro e descansar",["Abrir a janela e continuar","Aumentar o volume do rádio","Beber café e acelerar para chegar mais depressa"],"Só o descanso resolve a sonolência. Outras medidas são paliativos e perigosas."],
+["A velocidade a que se conduz deve ser sempre:","Adequada às condições da via, ao tráfego e ao estado do veículo",["A máxima permitida","A da maioria dos condutores","A que o condutor entender, se a via estiver livre"],"O limite legal é um máximo. Chuva, nevoeiro e tráfego exigem velocidade menor."],
+["Este sinal indica:","Velocidade máxima permitida de 50 km/h",["Velocidade mínima obrigatória de 50 km/h","Distância mínima de 50 metros","Fim de todas as limitações de velocidade"],"O círculo com bordo vermelho e um número indica o limite máximo de velocidade.","v50"],
+["Este sinal indica:","Passagem para peões",["Zona escolar","Paragem de autocarro","Passeio partilhado com bicicletas"],"O quadrado azul com um peão assinala uma passagem para peões.","peoes"],
+["Este sinal de perigo indica:","Curva à direita",["Curva à esquerda","Obrigação de virar à direita","Estrada sinuosa"],"O triângulo avisa de perigo. A seta mostra o sentido da curva.","curva"],
+["Este sinal indica:","Sentido proibido: não pode entrar por aqui",["Estrada sem saída","Proibição de parar","Fim de via prioritária"],"O círculo vermelho com a barra branca proíbe a entrada de veículos neste sentido.","sentido"],
+["Este sinal indica:","Proibição de parar e estacionar",["Apenas proibição de estacionar","Fim de todas as proibições","Estacionamento permitido em dias alternados"],"O X vermelho sobre fundo azul proíbe parar e estacionar.","paragem"]
+];
+
+const car=(x,y,c,r=0)=>`<g transform="translate(${x} ${y}) rotate(${r})"><rect x="-9" y="-16" width="18" height="32" rx="4" fill="${c}"/><rect x="-6" y="-8" width="12" height="9" rx="2" fill="#cfe3f5"/></g>`;
+const tri=(inner)=>`<svg viewBox="0 0 120 120" role="img"><polygon points="60,10 112,102 8,102" fill="#fff" stroke="#c4122f" stroke-width="10" stroke-linejoin="round"/>${inner}</svg>`;
+const disc=(fill,inner,stroke='#c4122f')=>`<svg viewBox="0 0 120 120" role="img"><circle cx="60" cy="60" r="52" fill="${fill}" stroke="${stroke}" stroke-width="10"/>${inner}</svg>`;
+const road=(inner)=>`<svg viewBox="0 0 120 120" role="img"><rect width="120" height="120" fill="#8a9a5b" opacity=".35"/>${inner}</svg>`;
+const FIG={
+ stop:`<svg viewBox="0 0 120 120" role="img"><polygon points="38,6 82,6 114,38 114,82 82,114 38,114 6,82 6,38" fill="#c4122f" stroke="#fff" stroke-width="4"/><text x="60" y="70" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="30" fill="#fff">STOP</text></svg>`,
+ ceda:`<svg viewBox="0 0 120 120" role="img"><polygon points="8,20 112,20 60,110" fill="#fff" stroke="#c4122f" stroke-width="10" stroke-linejoin="round"/></svg>`,
+ perigo:tri(`<rect x="56" y="36" width="8" height="34" rx="3" fill="#111"/><circle cx="60" cy="84" r="5" fill="#111"/>`),
+ curva:tri(`<path d="M50 92V68Q50 52 70 46" fill="none" stroke="#111" stroke-width="8"/><polygon points="64,34 86,44 66,58" fill="#111"/>`),
+ obrig:disc('#0b4ea2',`<path d="M52 92V56H38L60 26 82 56H68V92Z" fill="#fff"/>`,'#0b4ea2'),
+ ultrap:disc('#fff',`${car(44,60,'#c4122f')}${car(76,60,'#111')}`),
+ v50:disc('#fff',`<text x="60" y="73" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="40" fill="#111">50</text>`),
+ sentido:`<svg viewBox="0 0 120 120" role="img"><circle cx="60" cy="60" r="52" fill="#c4122f" stroke="#fff" stroke-width="4"/><rect x="24" y="50" width="72" height="20" fill="#fff"/></svg>`,
+ paragem:disc('#0b4ea2',`<path d="M32 32L88 88M88 32L32 88" stroke="#c4122f" stroke-width="12"/>`),
+ peoes:`<svg viewBox="0 0 120 120" role="img"><rect x="6" y="6" width="108" height="108" rx="8" fill="#0b4ea2"/><polygon points="60,18 100,96 20,96" fill="#fff"/><g stroke="#111" stroke-width="4" stroke-linecap="round" fill="none"><circle cx="60" cy="50" r="5" fill="#111"/><path d="M60 57L58 76M50 66L68 63M58 76L50 90M58 76L68 90"/></g></svg>`,
+ linha:road(`<rect x="28" y="0" width="64" height="120" fill="#555e68"/><rect x="58" y="0" width="4" height="120" fill="#fff"/><rect x="29" y="0" width="2" height="120" fill="#fff"/><rect x="89" y="0" width="2" height="120" fill="#fff"/>${car(76,84,'#0b4ea2')}`),
+ cruz:road(`<rect x="38" y="0" width="44" height="120" fill="#555e68"/><rect x="0" y="38" width="120" height="44" fill="#555e68"/>${car(70,100,'#0b4ea2')}${car(102,50,'#c4122f',-90)}<text x="70" y="118" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="9" fill="#fff">A</text><text x="102" y="36" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="9" fill="#fff">B</text>`),
+ semaf:`<svg viewBox="0 0 120 120" role="img"><rect x="38" y="6" width="44" height="108" rx="8" fill="#1c2430"/><circle cx="60" cy="30" r="12" fill="#5b1a22"/><circle cx="60" cy="60" r="12" fill="#ffb300"/><circle cx="60" cy="90" r="12" fill="#14452c"/></svg>`
+};
+const $=s=>document.querySelector(s), app=$('#app');
+const N=30, MAXERR=3, SECS=30*60;
+let S=null, mode='exam', timer=null;
+const sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const L='ABCD';
+function best(){try{return JSON.parse(localStorage.getItem('simcod-best')||'null')}catch(e){return null}}
+function saveBest(r){try{const b=best();if(!b||r.errs<b.errs)localStorage.setItem('simcod-best',JSON.stringify(r))}catch(e){}}
+
+function home(){
+  clearInterval(timer);
+  const b=best();
+  app.innerHTML=`<div class="cover"><div class="em" aria-hidden="true">🚗 💙 ✨ 🛣️ 🚦</div><div class="for">Para</div><div class="nm">Ludmira Figueiredo</div><div class="ml">Minha vida 💕</div><div class="se">Eu te enxergo</div></div>
+  <div class="panel">
+    <div class="eyebrow">Folha de exame</div>
+    <div class="sheet"><div><b>${N}</b><span>Perguntas</span></div><div><b>30'</b><span>Tempo</span></div><div><b>${MAXERR}</b><span>Erros máx.</span></div></div>
+    <p style="margin:0">Cada pergunta tem uma resposta certa. Pergunta sem resposta conta como erro. Com mais de ${MAXERR} erros fica reprovado.</p>
+    <div class="modes" role="group" aria-label="Modo">
+      <button class="mode" id="m-exam" aria-pressed="${mode==='exam'}"><b>Exame</b><small>Com tempo. A correção só aparece no fim.</small></button>
+      <button class="mode" id="m-train" aria-pressed="${mode==='train'}"><b>Treino</b><small>Sem tempo. Vê a correção logo a seguir a cada resposta.</small></button>
+    </div>
+    <button class="btn" id="go">Começar</button>
+    ${b?`<p class="fine">Melhor resultado neste dispositivo: ${b.errs} erro${b.errs===1?'':'s'} (${b.when}).</p>`:''}
+  </div>`;
+  $('#m-exam').onclick=()=>{mode='exam';home()};
+  $('#m-train').onclick=()=>{mode='train';home()};
+  $('#go').onclick=start;
+}
+
+function start(){
+  const qs=sh([...sh(BANK.filter(x=>x[4])).slice(0,9),...sh(BANK.filter(x=>!x[4])).slice(0,N-9)]).map(([q,c,w,e,f])=>{const o=sh([c,...w]);return{q,e,f,opts:o,ans:o.indexOf(c)}});
+  S={qs,pick:Array(N).fill(-1),i:0,left:SECS,done:false};
+  clearInterval(timer);
+  if(mode==='exam'){timer=setInterval(()=>{S.left--;const t=$('#tm');if(t){t.textContent=fmt(S.left);t.classList.toggle('low',S.left<=300)}if(S.left<=0)finish()},1000)}
+  quiz();
+}
+
+function quiz(){
+  const q=S.qs[S.i], tr=mode==='train', p=S.pick[S.i], locked=tr&&p>=0;
+  const dots=S.qs.map((_,k)=>{let c='dot';const pk=S.pick[k];if(pk>=0){c+=tr?(pk===S.qs[k].ans?' ok':' bad'):' done'}if(k===S.i)c+=' cur';return`<button class="${c}" data-k="${k}" aria-label="Pergunta ${k+1}">${k+1}</button>`}).join('');
+  const opts=q.opts.map((o,k)=>{let c='opt',pr=p===k;if(locked){if(k===q.ans)c+=' ok';else if(pr)c+=' bad'}return`<li><button class="${c}" data-o="${k}" aria-pressed="${pr}" ${locked?'disabled':''}><span class="k">${L[k]}</span><span>${o}</span></button></li>`}).join('');
+  const answered=S.pick.filter(x=>x>=0).length;
+  app.innerHTML=`<div class="panel">
+    <div class="bar"><div class="eyebrow">Pergunta ${S.i+1} de ${N} · ${answered} respondidas</div>${mode==='exam'?`<div class="timer ${S.left<=300?'low':''}" id="tm" aria-label="Tempo restante">${fmt(S.left)}</div>`:''}</div>
+    <div class="q">${q.q}</div>${q.f?`<figure class="fig">${FIG[q.f]}</figure>`:''}
+    <ul class="opts">${opts}</ul>
+    ${locked?`<div class="note"><b>${p===q.ans?'Certo.':'Errado.'}</b> ${q.e}</div>`:''}
+    <div class="actions">
+      <button class="btn ghost" id="prev" ${S.i===0?'disabled':''}>Anterior</button>
+      ${S.i<N-1?`<button class="btn" id="next">Seguinte</button>`:`<button class="btn" id="fin">Terminar</button>`}
+    </div>
+  </div>
+  <div class="panel"><div class="nav">${dots}</div>
+    <div class="actions"><button class="btn ghost" id="quit">Sair</button><button class="btn ghost" id="fin2">Terminar exame</button></div></div>`;
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{S.pick[S.i]=+b.dataset.o;quiz()});
+  document.querySelectorAll('.dot').forEach(b=>b.onclick=()=>{S.i=+b.dataset.k;quiz()});
+  $('#prev').onclick=()=>{S.i--;quiz()};
+  if($('#next'))$('#next').onclick=()=>{S.i++;quiz()};
+  if($('#fin'))$('#fin').onclick=confirmFinish;
+  $('#fin2').onclick=confirmFinish;
+  $('#quit').onclick=()=>{clearInterval(timer);home()};
+}
+
+function confirmFinish(){
+  const blank=S.pick.filter(x=>x<0).length;
+  if(!blank)return finish();
+  const b=$('#fin2'); if(b.dataset.armed)return finish();
+  b.dataset.armed=1;b.textContent=`Faltam ${blank}. Confirmar`;
+}
+
+function finish(){
+  if(S.done)return;S.done=true;clearInterval(timer);
+  const wrong=[];S.qs.forEach((q,k)=>{if(S.pick[k]!==q.ans)wrong.push(k)});
+  const errs=wrong.length, pass=errs<=MAXERR, used=SECS-S.left;
+  if(mode==='exam')saveBest({errs,when:new Date().toLocaleDateString('pt-PT')});
+  const list=wrong.map(k=>{const q=S.qs[k],p=S.pick[k];return`<div class="err"><div class="tag r">Pergunta ${k+1}</div><p><b>${q.q}</b></p>${q.f?`<figure class="fig">${FIG[q.f]}</figure>`:''}
+    <p><span class="tag r">${p<0?'Sem resposta':'A sua resposta'}</span>${p<0?'':' · '+q.opts[p]}</p><p><span class="tag g">Correta</span> · ${q.opts[q.ans]}</p><p class="fine">${q.e}</p></div>`}).join('');
+  app.innerHTML=`<div class="panel">
+    <div class="eyebrow">Resultado</div>
+    <div class="verdict ${pass?'pass':'fail'}">${pass?'Aprovado':'Reprovado'}</div>
+    <div class="sheet"><div><b>${N-errs}</b><span>Certas</span></div><div><b>${errs}</b><span>Erros</span></div><div><b>${mode==='exam'?fmt(used):'—'}</b><span>Tempo</span></div></div>
+    <p style="margin:0">${pass?`Ficou dentro do limite de ${MAXERR} erros.`:`O limite é ${MAXERR} erros. Reveja as respostas abaixo e tente outra vez.`}</p>
+    <div class="actions"><button class="btn" id="again">Novo exame</button><button class="btn ghost" id="menu">Início</button></div>
+  </div>
+  ${errs?`<div class="panel"><h2>Para rever</h2>${list}</div>`:''}`;
+  $('#again').onclick=start;$('#menu').onclick=home;
+  window.scrollTo(0,0);
+}
+home();
+</script>
